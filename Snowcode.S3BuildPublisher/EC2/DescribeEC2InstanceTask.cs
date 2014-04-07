@@ -92,7 +92,7 @@ namespace Snowcode.S3BuildPublisher.EC2
         public string VpcId { get; set; }
 
         [Output]
-        public string AmiLaunchIndex { get; set; }
+        public int AmiLaunchIndex { get; set; }
 
         #endregion
 
@@ -121,32 +121,32 @@ namespace Snowcode.S3BuildPublisher.EC2
         {
             using (var helper = new EC2Helper(clientDetails))
             {
-                RunningInstance instance = helper.DescribeInstance(InstanceId);
+                Instance instance = helper.DescribeInstance(InstanceId);
                 Log.LogMessage(MessageImportance.Normal, "Got Instance {0} details", InstanceId);
 
                 SetOutputProperties(instance);
             }
         }
 
-        private void SetOutputProperties(RunningInstance instance)
+        private void SetOutputProperties(Instance instance)
         {
             AmiLaunchIndex = instance.AmiLaunchIndex;
             Architecture = instance.Architecture;
             ImageId = instance.ImageId;
             InstanceLifecycle = instance.InstanceLifecycle;
-            if (instance.InstanceState != null)
+            if (instance.State != null)
             {
-                InstanceStateCode = instance.InstanceState.Code;
-                InstanceStateName = instance.InstanceState.Name;
+                InstanceStateCode = instance.State.Code;
+                InstanceStateName = instance.State.Name;
             }
             InstanceType = instance.InstanceType;
-            IpAddress = instance.IpAddress;
+            IpAddress = instance.PrivateIpAddress;
             KernelId = instance.KernelId;
             KeyName = instance.KeyName;
-            LaunchTime = instance.LaunchTime;
+            LaunchTime = instance.LaunchTime.ToString();
             if (instance.Monitoring!=null)
             {
-                MonitoringState = instance.Monitoring.MonitoringState;
+                MonitoringState = instance.Monitoring.State;
             }
             if (instance.Placement!=null)
             {

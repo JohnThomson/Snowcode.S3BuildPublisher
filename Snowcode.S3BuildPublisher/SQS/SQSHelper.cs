@@ -8,7 +8,7 @@ using Amazon;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Snowcode.S3BuildPublisher.Client;
-using Attribute = Amazon.SQS.Model.Attribute;
+//using Attribute = Amazon.SQS.Model.Attribute;
 
 namespace Snowcode.S3BuildPublisher.SQS
 {
@@ -31,7 +31,7 @@ namespace Snowcode.S3BuildPublisher.SQS
             Client = AWSClientFactory.CreateAmazonSQSClient(clientDetails.AwsAccessKeyId, clientDetails.AwsSecretAccessKey);
         }
 
-        public SQSHelper(AmazonSQS amazonSQSClient)
+        public SQSHelper(IAmazonSQS amazonSQSClient)
         {
             Client = amazonSQSClient;
         }
@@ -43,7 +43,7 @@ namespace Snowcode.S3BuildPublisher.SQS
 
         #endregion
 
-        protected AmazonSQS Client
+        protected IAmazonSQS Client
         {
             get;
             set;
@@ -74,9 +74,9 @@ namespace Snowcode.S3BuildPublisher.SQS
         {
             var request = new AddPermissionRequest
                               {
-                                  ActionName = new List<string>(actionNames),
+                                  Actions = new List<string>(actionNames),
                                   QueueUrl = queueUrl,
-                                  AWSAccountId = new List<string>(awsAccountIds),
+                                  AWSAccountIds = new List<string>(awsAccountIds),
                                   Label = label
                               };
 
@@ -104,7 +104,7 @@ namespace Snowcode.S3BuildPublisher.SQS
 
             ListQueuesResponse response = Client.ListQueues(request);
 
-            return response.ListQueuesResult.QueueUrl.ToArray();
+            return response.QueueUrls.ToArray();
         }
 
         /// <summary>
@@ -129,15 +129,11 @@ namespace Snowcode.S3BuildPublisher.SQS
         /// <returns></returns>
         public Message ReceiveMessage(string queueUrl)
         {
-            var request = new ReceiveMessageRequest { MaxNumberOfMessages = 1, QueueUrl = queueUrl };
+            var request = new ReceiveMessageRequest {MaxNumberOfMessages = 1, QueueUrl = queueUrl};
 
             ReceiveMessageResponse response = Client.ReceiveMessage(request);
 
-            if (response.IsSetReceiveMessageResult())
-            {
-                return response.ReceiveMessageResult.Message.FirstOrDefault();
-            }
-            return null;
+            return response.Messages.FirstOrDefault();
         }
 
         /// <summary>
@@ -196,7 +192,7 @@ namespace Snowcode.S3BuildPublisher.SQS
         /// </remarks>
         public GetQueueAttributesResult GetQueueAttributes(string queueUrl)
         {
-            var request = new GetQueueAttributesRequest { QueueUrl = queueUrl, AttributeName = new List<string>(new[] { "All" }) };
+            var request = new GetQueueAttributesRequest { QueueUrl = queueUrl, AttributeNames = new List<string>(new[] { "All" }) };
 
             GetQueueAttributesResponse response = Client.GetQueueAttributes(request);
 
@@ -212,8 +208,9 @@ namespace Snowcode.S3BuildPublisher.SQS
             string queueArn = GetQueueArn(queueUrl);
 
             var request = new SetQueueAttributesRequest { QueueUrl = queueUrl };
-            var attribute = new Attribute { Name = "Policy", Value = ConstructPolicy(queueArn, sourceArn) };
-            request.Attribute = new List<Attribute> { attribute };
+            var attributes = new Dictionary<string, string>();
+            attributes["Policy"] = ConstructPolicy(queueArn, sourceArn);
+            request.Attributes = attributes;
 
             Client.SetQueueAttributes(request);
         }
@@ -245,15 +242,11 @@ namespace Snowcode.S3BuildPublisher.SQS
 
         private string GetQueueArn(string queueUrl)
         {
-            var request = new GetQueueAttributesRequest { QueueUrl = queueUrl, AttributeName = new List<string>(new[] { "QueueArn" }) };
+            var request = new GetQueueAttributesRequest { QueueUrl = queueUrl, AttributeNames = new List<string>(new[] { "QueueArn" }) };
 
             GetQueueAttributesResponse response = Client.GetQueueAttributes(request);
 
-            if (response.IsSetGetQueueAttributesResult())
-            {
-                return response.GetQueueAttributesResult.Attribute.Where(x => x.Name == "QueueArn").First().Value;
-            }
-            throw new Exception("No SetQueueAttribute result");
+            return response.Attributes["QueueArn"];
         }
 
         #region Implementation of IDisposable

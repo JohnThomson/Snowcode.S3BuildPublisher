@@ -28,7 +28,7 @@ namespace Snowcode.S3BuildPublisher.S3
             Client = AWSClientFactory.CreateAmazonS3Client(clientDetails.AwsAccessKeyId, clientDetails.AwsSecretAccessKey);
         }
 
-        public S3Helper(AmazonS3 amazonS3Client)
+        public S3Helper(IAmazonS3 amazonS3Client)
         {
             Client = amazonS3Client;
         }
@@ -42,7 +42,7 @@ namespace Snowcode.S3BuildPublisher.S3
 
         #region Properties
 
-        protected AmazonS3 Client
+        protected IAmazonS3 Client
         {
             get;
             set;
@@ -138,14 +138,14 @@ namespace Snowcode.S3BuildPublisher.S3
         /// <param name="cannedACL">ACL to use, AuthenticatedRead, BucketOwnerFullControl, BucketOwnerRead, NoACL, Private, PublicRead, PublicReadWrite</param>
         public void SetAcl(string bucketName, string cannedACL, string key)
         {
-            var request = new SetACLRequest
+            var request = new PutACLRequest
                               {
                                   BucketName = bucketName,
                                   CannedACL = (S3CannedACL)Enum.Parse(typeof(S3CannedACL), cannedACL),
                                   Key = key
                               };
 
-            Client.SetACL(request);
+            Client.PutACL(request);
         }
 
         #endregion
@@ -154,7 +154,7 @@ namespace Snowcode.S3BuildPublisher.S3
 
         private void CreateBucketIfNeeded(string bucketName)
         {
-            if (!AmazonS3Util.DoesS3BucketExist(bucketName, Client))
+            if (!AmazonS3Util.DoesS3BucketExist(Client, bucketName))
             {
                 CreateBucket(bucketName);
             }
@@ -187,12 +187,7 @@ namespace Snowcode.S3BuildPublisher.S3
         {
             S3CannedACL acl = publicRead ? S3CannedACL.PublicRead : S3CannedACL.Private;
 
-            var request = new PutObjectRequest();
-            request
-                .WithCannedACL(acl)
-                .WithFilePath(file)
-                .WithBucketName(bucketName)
-                .WithKey(key);
+            var request = new PutObjectRequest() {CannedACL = acl, FilePath = file, BucketName = bucketName, Key = key};
 
             Client.PutObject(request);
         }

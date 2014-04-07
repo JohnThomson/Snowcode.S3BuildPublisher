@@ -29,7 +29,7 @@ namespace Snowcode.S3BuildPublisher.EC2
             Client = AWSClientFactory.CreateAmazonEC2Client(clientDetails.AwsAccessKeyId, clientDetails.AwsSecretAccessKey);
         }
 
-        public EC2Helper(AmazonEC2 amazonEC2Client)
+        public EC2Helper(IAmazonEC2 amazonEC2Client)
         {
             Client = amazonEC2Client;
         }
@@ -41,7 +41,7 @@ namespace Snowcode.S3BuildPublisher.EC2
 
         #endregion
 
-        protected AmazonEC2 Client
+        protected IAmazonEC2 Client
         {
             get;
             set;
@@ -56,15 +56,12 @@ namespace Snowcode.S3BuildPublisher.EC2
         /// <remarks>This uses EBS storage EC2 instances which can be stopped and started.  The instance should be stopped.</remarks>
         public void StartInstances(IEnumerable<string> instanceIds)
         {
-            var request = new StartInstancesRequest { InstanceId = new List<string>(instanceIds) };
+            var request = new StartInstancesRequest {InstanceIds = new List<string>(instanceIds)};
             StartInstancesResponse resonse = Client.StartInstances(request);
 
-            if (resonse.IsSetStartInstancesResult())
+            foreach (InstanceStateChange instanceStateChange in resonse.StartingInstances)
             {
-                foreach (InstanceStateChange instanceStateChange in resonse.StartInstancesResult.StartingInstances)
-                {
-                    Trace.WriteLine(string.Format("Starting instance {0}", instanceStateChange.InstanceId));
-                }
+                Trace.WriteLine(string.Format("Starting instance {0}", instanceStateChange.InstanceId));
             }
         }
 
@@ -74,15 +71,12 @@ namespace Snowcode.S3BuildPublisher.EC2
         /// <param name="instances"></param>
         public void StopInstances(string[] instances)
         {
-            var request = new StopInstancesRequest { InstanceId = new List<string>(instances) };
+            var request = new StopInstancesRequest {InstanceIds = new List<string>(instances)};
             StopInstancesResponse response = Client.StopInstances(request);
 
-            if (response.IsSetStopInstancesResult())
+            foreach (InstanceStateChange instanceStateChange in response.StoppingInstances)
             {
-                foreach (InstanceStateChange instanceStateChange in response.StopInstancesResult.StoppingInstances)
-                {
-                    Trace.WriteLine(string.Format("Stopping instance {0}", instanceStateChange.InstanceId));
-                }
+                Trace.WriteLine(string.Format("Stopping instance {0}", instanceStateChange.InstanceId));
             }
         }
 
@@ -109,7 +103,7 @@ namespace Snowcode.S3BuildPublisher.EC2
                                   MaxCount = numberOfInstances,
                                   KeyName = keyName,
                                   UserData = userData,
-                                  SecurityGroup = new List<string>(securityGroups)
+                                  SecurityGroups = new List<string>(securityGroups)
                               };
 
             if (!string.IsNullOrEmpty(availabilityZone))
@@ -119,7 +113,7 @@ namespace Snowcode.S3BuildPublisher.EC2
 
             RunInstancesResponse response = Client.RunInstances(request);
 
-            return response.RunInstancesResult.Reservation.RunningInstance.Select(runningInstance => runningInstance.InstanceId).ToList();
+            return response.RunInstancesResult.Reservation.Instances.Select(runningInstance => runningInstance.InstanceId).ToList();
         }
 
         /// <summary>
@@ -128,7 +122,7 @@ namespace Snowcode.S3BuildPublisher.EC2
         /// <param name="instanceIds"></param>
         public void TerminateInstance(IEnumerable<string> instanceIds)
         {
-            var request = new TerminateInstancesRequest { InstanceId = new List<string>(instanceIds) };
+            var request = new TerminateInstancesRequest { InstanceIds = new List<string>(instanceIds) };
 
             Client.TerminateInstances(request);
         }
@@ -139,24 +133,21 @@ namespace Snowcode.S3BuildPublisher.EC2
         /// <param name="instanceIds"></param>
         public void RebootInstance(IEnumerable<string> instanceIds)
         {
-            var request = new RebootInstancesRequest { InstanceId = new List<string>(instanceIds) };
+            var request = new RebootInstancesRequest { InstanceIds = new List<string>(instanceIds) };
 
             Client.RebootInstances(request);
         }
 
-        public RunningInstance DescribeInstance(string instanceId)
+        public Instance DescribeInstance(string instanceId)
         {
-            var request = new DescribeInstancesRequest { InstanceId = new List<string> { instanceId } };
+            var request = new DescribeInstancesRequest {InstanceIds = new List<string> {instanceId}};
 
             DescribeInstancesResponse response = Client.DescribeInstances(request);
 
-            if (response.IsSetDescribeInstancesResult())
+            Reservation reservation = response.Reservations.FirstOrDefault();
+            if (reservation != null)
             {
-                Reservation reservation = response.DescribeInstancesResult.Reservation.FirstOrDefault();
-                if (reservation != null)
-                {
-                    return reservation.RunningInstance.FirstOrDefault();
-                }
+                return reservation.Instances.FirstOrDefault();
             }
             throw new Exception("No details found of instance.");
         }
@@ -168,24 +159,23 @@ namespace Snowcode.S3BuildPublisher.EC2
         /// <param name="desiredState"></param>
         /// <param name="timeOutSeconds"></param>
         /// <param name="pollIntervalSeconds"></param>
-        public void WaitForInstances(string[] instanceIds, string desiredState, int timeOutSeconds, int pollIntervalSeconds)
+        public void WaitForInstances(string[] instanceIds, string desiredState, int timeOutSeconds,
+            int pollIntervalSeconds)
         {
             DateTime waitUntil = DateTime.Now.AddSeconds(timeOutSeconds);
-            var request = new DescribeInstancesRequest { InstanceId = new List<string>(instanceIds) };
+            var request = new DescribeInstancesRequest {InstanceIds = new List<string>(instanceIds)};
 
             do
             {
                 DescribeInstancesResponse response = Client.DescribeInstances(request);
 
-                if (response.IsSetDescribeInstancesResult())
+                // Are All instances in the desired state?
+                if (response.Reservations.All(
+                    reservation =>
+                        reservation.Instances.All(runningInstnace => runningInstnace.State.Name == desiredState))
+                    )
                 {
-                    // Are All instances in the desired state?
-                    if (response.DescribeInstancesResult.Reservation.All(
-                        reservation => reservation.RunningInstance.All(runningInstnace => runningInstnace.InstanceState.Name == desiredState))
-                        )
-                    {
-                        return;
-                    }
+                    return;
                 }
 
                 Thread.Sleep(new TimeSpan(0, 0, pollIntervalSeconds));
@@ -229,7 +219,7 @@ namespace Snowcode.S3BuildPublisher.EC2
         /// <param name="avilabilityZone">The Availability zone to create the volume in</param>
         /// <param name="size"></param>
         /// <returns>Returns the VolumeId of the newly created volume</returns>
-        public string CreateNewVolume(string availabilityZone, string size)
+        public string CreateNewVolume(string availabilityZone, int size)
         {
             var request = new CreateVolumeRequest { AvailabilityZone = availabilityZone, Size = size };
 

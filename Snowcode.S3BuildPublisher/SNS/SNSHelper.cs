@@ -19,15 +19,15 @@ namespace Snowcode.S3BuildPublisher.SNS
 
         public SNSHelper(string awsAccessKeyId, string awsSecretAccessKey)
         {
-            Client = AWSClientFactory.CreateAmazonSNSClient(awsAccessKeyId, awsSecretAccessKey);
+            Client = AWSClientFactory.CreateAmazonSimpleNotificationServiceClient(awsAccessKeyId, awsSecretAccessKey);
         }
 
         public SNSHelper(AwsClientDetails clientDetails)
         {
-            Client = AWSClientFactory.CreateAmazonSNSClient(clientDetails.AwsAccessKeyId, clientDetails.AwsSecretAccessKey);
+            Client = AWSClientFactory.CreateAmazonSimpleNotificationServiceClient(clientDetails.AwsAccessKeyId, clientDetails.AwsSecretAccessKey);
         }
 
-        public SNSHelper(AmazonSimpleNotificationService amazonSNSClient)
+        public SNSHelper(IAmazonSimpleNotificationService amazonSNSClient)
         {
             Client = amazonSNSClient;
         }
@@ -39,7 +39,7 @@ namespace Snowcode.S3BuildPublisher.SNS
 
         #endregion
 
-        protected AmazonSimpleNotificationService Client
+        protected IAmazonSimpleNotificationService Client
         {
             get;
             set;
@@ -81,8 +81,8 @@ namespace Snowcode.S3BuildPublisher.SNS
         {
             var request = new AddPermissionRequest
                               {
-                                  ActionNames = new List<string>(actionNames),
-                                  AWSAccountIds = new List<string>(awsAccountIds),
+                                  ActionName = new List<string>(actionNames),
+                                  AWSAccountId = new List<string>(awsAccountIds),
                                   Label = label,
                                   TopicArn = topicArn
                               };

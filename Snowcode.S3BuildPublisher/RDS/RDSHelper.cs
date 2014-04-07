@@ -24,7 +24,7 @@ namespace Snowcode.S3BuildPublisher.RDS
             Client = AWSClientFactory.CreateAmazonRDSClient(clientDetails.AwsAccessKeyId, clientDetails.AwsSecretAccessKey);
         }
 
-        public RDSHelper(AmazonRDS amazonRDSClient)
+        public RDSHelper(IAmazonRDS amazonRDSClient)
         {
             Client = amazonRDSClient;
         }
@@ -38,7 +38,7 @@ namespace Snowcode.S3BuildPublisher.RDS
 
         #region Properties
 
-        protected AmazonRDS Client
+        protected IAmazonRDS Client
         {
             get;
             set;
@@ -53,12 +53,7 @@ namespace Snowcode.S3BuildPublisher.RDS
         public DBInstance CreateDatabase(CreateDBInstanceRequest request)           
         {
             CreateDBInstanceResponse response = Client.CreateDBInstance(request);
-
-            if (response.IsSetCreateDBInstanceResult())
-            {
-                return response.CreateDBInstanceResult.DBInstance;
-            }
-            throw new Exception("Failed to get CreateDBInstanceResult response");
+            return response.DBInstance;
         }
 
         public void DescriveInstances()

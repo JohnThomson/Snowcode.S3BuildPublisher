@@ -21,7 +21,7 @@ namespace Snowcode.S3BuildPublisher.EC2
         /// Gets or sets the volume size in MiB
         /// </summary>
         [Required]
-        public string Size { get; set; }
+        public int Size { get; set; }
 
         /// <summary>
         /// Gets or sets the VolumeId of the created volume.

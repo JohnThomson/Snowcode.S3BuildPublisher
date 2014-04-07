@@ -28,7 +28,7 @@ namespace Snowcode.S3BuildPublisher.SimpleDB
             Client = AWSClientFactory.CreateAmazonSimpleDBClient(clientDetails.AwsAccessKeyId, clientDetails.AwsSecretAccessKey);
         }
 
-        public SimpleDBHelper(AmazonSimpleDB amazonSimpleDBClient)
+        public SimpleDBHelper(IAmazonSimpleDB amazonSimpleDBClient)
         {
             Client = amazonSimpleDBClient;
         }
@@ -40,7 +40,7 @@ namespace Snowcode.S3BuildPublisher.SimpleDB
 
         #endregion
 
-        protected AmazonSimpleDB Client
+        protected IAmazonSimpleDB Client
         {
             get;
             set;
@@ -89,7 +89,7 @@ namespace Snowcode.S3BuildPublisher.SimpleDB
                               {
                                   DomainName = domainName,
                                   ItemName = itemName,
-                                  Attribute = new List<ReplaceableAttribute>() { replaceableAttribute }
+                                  Attributes = new List<ReplaceableAttribute>() { replaceableAttribute }
                               };
 
             Client.PutAttributes(request);
@@ -106,20 +106,17 @@ namespace Snowcode.S3BuildPublisher.SimpleDB
         public string GetAttribute(string domainName, string itemName, string name)
         {
             var request = new GetAttributesRequest
-                              {
-                                  DomainName = domainName,
-                                  ItemName = itemName,
-                                  AttributeName = new List<string> { name }
-                              };
+            {
+                DomainName = domainName,
+                ItemName = itemName,
+                AttributeNames = new List<string> {name}
+            };
 
             GetAttributesResponse response = Client.GetAttributes(request);
 
-            if (response.IsSetGetAttributesResult())
+            if (response.Attributes.Count > 0)
             {
-                if (response.GetAttributesResult.Attribute.Count > 0)
-                {
-                    return response.GetAttributesResult.Attribute[0].Value;
-                }
+                return response.GetAttributesResult.Attributes[0].Value;
             }
 
             return string.Empty;
@@ -138,7 +135,7 @@ namespace Snowcode.S3BuildPublisher.SimpleDB
                               {
                                   DomainName = domainName,
                                   ItemName = itemName,
-                                  Attribute = attributes
+                                  Attributes = attributes
                               };
 
             Client.DeleteAttributes(request);

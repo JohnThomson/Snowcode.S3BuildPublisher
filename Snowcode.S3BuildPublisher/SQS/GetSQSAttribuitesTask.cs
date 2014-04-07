@@ -113,7 +113,7 @@ namespace Snowcode.S3BuildPublisher.SQS
 
         private string GetAttributeValue(GetQueueAttributesResult attributeResults, string attributeName)
         {
-            return attributeResults.Attribute.Where(x => x.Name == attributeName).FirstOrDefault().Value;
+            return attributeResults.Attributes[attributeName];
         }
     }
 }
