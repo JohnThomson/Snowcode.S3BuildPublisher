@@ -21,6 +21,8 @@ Warning: I have not had time to test tasks other than basic S3 upload to see whe
 
 Currently, the change to allow periods in bucket names requires being explicit about the region. See the code that sets RegionEndpoint in the S3Helper constructor. It is currently hard-coded to USEast1. If that doesn't work for you, you will need to change it (or introduce some way of configuring it).
 
+These changes are currently all in the Thomson branch
+
 ## Building
 
 Currently requires visual studio 2010 with nuget installed.
