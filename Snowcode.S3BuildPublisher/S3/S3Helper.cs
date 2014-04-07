@@ -20,12 +20,22 @@ namespace Snowcode.S3BuildPublisher.S3
 
         public S3Helper(string awsAccessKeyId, string awsSecretAccessKey)
         {
-            Client = AWSClientFactory.CreateAmazonS3Client(awsAccessKeyId, awsSecretAccessKey);
+            var config = new AmazonS3Config()
+            {
+                ForcePathStyle = true,
+                RegionEndpoint = Amazon.RegionEndpoint.USEast1 // Todo: this won't work for all clients!
+            };
+            Client = AWSClientFactory.CreateAmazonS3Client(awsAccessKeyId, awsSecretAccessKey, config);
         }
 
         public S3Helper(AwsClientDetails clientDetails)
         {
-            Client = AWSClientFactory.CreateAmazonS3Client(clientDetails.AwsAccessKeyId, clientDetails.AwsSecretAccessKey);
+            var config = new AmazonS3Config()
+            {
+                ForcePathStyle = true,
+                RegionEndpoint = Amazon.RegionEndpoint.USEast1 // Todo: this won't work for all clients!
+            };
+            Client = AWSClientFactory.CreateAmazonS3Client(clientDetails.AwsAccessKeyId, clientDetails.AwsSecretAccessKey, config);
         }
 
         public S3Helper(IAmazonS3 amazonS3Client)

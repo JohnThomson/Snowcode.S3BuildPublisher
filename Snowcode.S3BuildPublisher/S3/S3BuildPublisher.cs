@@ -74,10 +74,10 @@ namespace Snowcode.S3BuildPublisher.S3
 
         private void ValidateBucketName()
         {
-            if (DestinationBucket.Contains("."))
-            {
-                throw new Exception("Bucket must not contain a .");
-            }
+            //if (DestinationBucket.Contains("."))
+            //{
+            //    throw new Exception("Bucket must not contain a .");
+            //}
         }
 
         private void ValidateFolder()
