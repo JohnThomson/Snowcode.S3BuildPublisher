@@ -35,6 +35,11 @@ namespace Snowcode.S3BuildPublisher.S3
         /// </summary>
         public bool PublicRead { get; set; }
 
+        /// <summary>
+        /// Gets or sets the content type that should be set in the S3 metadata for the files
+        /// </summary>
+        public string ContentType { get; set; }
+
         #endregion
 
         public override bool Execute()
@@ -103,7 +108,7 @@ namespace Snowcode.S3BuildPublisher.S3
         {
             using (var helper = new S3Helper(clientDetails))
             {
-                helper.Publish(SourceFiles, DestinationBucket, DestinationFolder, PublicRead);
+                helper.Publish(SourceFiles, DestinationBucket, DestinationFolder, PublicRead, ContentType);
                 Log.LogMessage(MessageImportance.Normal, "Published {0} files to S3", SourceFiles.Length);
             }
         }

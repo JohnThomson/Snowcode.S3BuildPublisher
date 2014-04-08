@@ -69,13 +69,13 @@ namespace Snowcode.S3BuildPublisher.S3
         /// <param name="bucketName"></param>
         /// <param name="folder"></param>
         /// <param name="publicRead"></param>
-        public void Publish(string[] files, string bucketName, string folder, bool publicRead)
+        public void Publish(string[] files, string bucketName, string folder, bool publicRead, string contentType = null)
         {
             CreateBucketIfNeeded(bucketName);
 
             string destinationFolder = GetDestinationFolder(folder);
 
-            StoreFiles(files, bucketName, destinationFolder, publicRead);
+            StoreFiles(files, bucketName, destinationFolder, publicRead, contentType);
         }
 
         /// <summary>
@@ -104,9 +104,12 @@ namespace Snowcode.S3BuildPublisher.S3
         /// <param name="bucketName"></param>
         /// <param name="key"></param>
         /// <param name="file"></param>
-        public void PutFileObject(string bucketName, string key, string file)
+        /// <param name="contentType"></param>
+        public void PutFileObject(string bucketName, string key, string file, string contentType = null)
         {
             var request = new PutObjectRequest { FilePath = file, BucketName = bucketName, Key = key };
+            if (contentType != null) // probably setting to null is harmless, but I'd rather do nothing if not specified.
+                request.ContentType = contentType;
 
             Client.PutObject(request);
         }
@@ -170,13 +173,13 @@ namespace Snowcode.S3BuildPublisher.S3
             }
         }
 
-        private void StoreFiles(string[] files, string bucketName, string destinationFolder, bool publicRead)
+        private void StoreFiles(string[] files, string bucketName, string destinationFolder, bool publicRead, string contentType = null)
         {
             foreach (string file in files)
             {
                 // Use the filename as the key (aws filename).
                 string key = Path.GetFileName(file);
-                StoreFile(file, destinationFolder + key, bucketName, publicRead);
+                StoreFile(file, destinationFolder + key, bucketName, publicRead, contentType);
             }
         }
 
@@ -193,11 +196,13 @@ namespace Snowcode.S3BuildPublisher.S3
             return destinationFolder;
         }
 
-        private void StoreFile(string file, string key, string bucketName, bool publicRead)
+        private void StoreFile(string file, string key, string bucketName, bool publicRead, string contentType = null)
         {
             S3CannedACL acl = publicRead ? S3CannedACL.PublicRead : S3CannedACL.Private;
 
             var request = new PutObjectRequest() {CannedACL = acl, FilePath = file, BucketName = bucketName, Key = key};
+            if (contentType != null) // probably harmless to just set to null, but feels safer not to set at all if not specified.
+                request.ContentType = contentType;
 
             Client.PutObject(request);
         }

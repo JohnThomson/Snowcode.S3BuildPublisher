@@ -26,11 +26,13 @@ namespace Snowcode.S3BuildPublisher.S3
         [Required]
         public string FileName { get; set; }
 
+        public string ContentType { get; set; }
+
         #endregion
 
         public override bool Execute()
         {
-            Log.LogMessage(MessageImportance.Normal, "Putting file {0} into AWS S3 object {0} in bucket {1}", FileName, Key, BucketName);
+            Log.LogMessage(MessageImportance.Normal, "Putting file {0} into AWS S3 object {1} in bucket {2} with content type {3}", FileName, Key, BucketName, ContentType);
 
             try
             {
@@ -51,8 +53,8 @@ namespace Snowcode.S3BuildPublisher.S3
         {
             using (var helper = new S3Helper(clientDetails))
             {
-                helper.PutFileObject(BucketName, Key, FileName);
-                Log.LogMessage(MessageImportance.Normal, "Put file {0} into object {0} in bucket {1}", FileName, Key, BucketName);
+                helper.PutFileObject(BucketName, Key, FileName, ContentType);
+                Log.LogMessage(MessageImportance.Normal, "Put file {0} into object {1} in bucket {2} with content type {3}", FileName, Key, BucketName, ContentType);
             }
         }
     }
