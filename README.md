@@ -13,6 +13,8 @@ See http://blog.analysisuk.com/post/MSBuild-AWS-Task-Library.aspx for documentat
 
 ## What I've changed
 
+Added S3BuildPublisher.ContentEncoding property.
+
 I removed the restriction that S3 publish tasks cannot work with a bucket whose names contain periods.
 
 This required updating the code to the latest version of AWSSDK (2.0.13 at the time), so I made minimum changes to get it compile.
