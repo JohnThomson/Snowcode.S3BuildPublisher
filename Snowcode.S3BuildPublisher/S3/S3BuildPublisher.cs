@@ -40,6 +40,12 @@ namespace Snowcode.S3BuildPublisher.S3
         /// </summary>
         public string ContentType { get; set; }
 
+		/// <summary>
+		/// Gets or sets the content encoding that should be set in the S3 metadata for the files
+		/// (e.g., gzip)
+		/// </summary>
+		public string ContentEncoding { get; set; }
+
         #endregion
 
         public override bool Execute()
@@ -108,7 +114,7 @@ namespace Snowcode.S3BuildPublisher.S3
         {
             using (var helper = new S3Helper(clientDetails))
             {
-                helper.Publish(SourceFiles, DestinationBucket, DestinationFolder, PublicRead, ContentType);
+                helper.Publish(SourceFiles, DestinationBucket, DestinationFolder, PublicRead, ContentType, ContentEncoding);
                 Log.LogMessage(MessageImportance.Normal, "Published {0} files to S3", SourceFiles.Length);
             }
         }
